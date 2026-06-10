@@ -23,7 +23,7 @@ requiredConfigurationParameters:
     sensitive: true
   - name: "OBOT_AUTH_PROVIDER_COOKIE_SECRET"
     friendlyName: "Cookie Secret"
-    description: "Secret used to encrypt cookies. Must be a random string of length 16, 24, or 32."
+    description: "Base64-encoded secret used to encrypt cookies. The decoded value must be length 16, 24, or 32."
     sensitive: true
     hidden: true
   - name: "OBOT_AUTH_PROVIDER_EMAIL_DOMAINS"

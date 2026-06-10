@@ -137,6 +137,7 @@ func buildOAuthProxyOptions(opts Options) (*options.Options, error) {
 	legacyOpts.LegacyProvider.ClientSecret = opts.ClientSecret
 	legacyOpts.LegacyProvider.OIDCIssuerURL = normalizedIssuer(opts.Issuer)
 	legacyOpts.LegacyProvider.Scope = scope
+	legacyOpts.LegacyProvider.UserIDClaim = "sub"
 	legacyOpts.LegacyProvider.CodeChallengeMethod = "S256"
 	legacyOpts.LegacyProvider.InsecureOIDCSkipNonce = false
 	legacyOpts.LegacyProvider.InsecureOIDCSkipIssuerVerification = false
@@ -206,16 +207,10 @@ func getState(p *oauth2proxy.OAuthProxy, issuer, userInfoURL string) http.Handle
 			return
 		}
 
-		ss.User = userInfo.Subject
-		ss.Email = userInfo.Email
-		ss.EmailVerified = userInfo.EmailVerified
-		ss.Issuer = issuer
-		ss.PreferredUsername = userInfo.PreferredUsername
-		if ss.PreferredUsername == "" {
-			ss.PreferredUsername = userInfo.Name
-		}
-		if ss.PreferredUsername == "" {
-			ss.PreferredUsername = userInfo.Email
+		if err := mergeUserInfoIntoState(&ss, userInfo, issuer); err != nil {
+			http.Error(w, fmt.Sprintf("failed to reconcile user info: %v", err), http.StatusInternalServerError)
+			fmt.Printf("ERROR: generic-oauth-auth-provider: failed to reconcile user info: %v\n", err)
+			return
 		}
 
 		if err := json.NewEncoder(w).Encode(ss); err != nil {
@@ -224,6 +219,59 @@ func getState(p *oauth2proxy.OAuthProxy, issuer, userInfoURL string) http.Handle
 			return
 		}
 	}
+}
+
+func mergeUserInfoIntoState(ss *state.SerializableState, userInfo *profile.UserInfo, issuer string) error {
+	if ss.User == "" {
+		return fmt.Errorf("authenticated session is missing subject")
+	}
+	if userInfo.Subject == "" {
+		return fmt.Errorf("userinfo response is missing sub")
+	}
+	if userInfo.Subject != ss.User {
+		return fmt.Errorf("userinfo sub %q does not match authenticated subject %q", userInfo.Subject, ss.User)
+	}
+	if ss.Email == "" {
+		return fmt.Errorf("authenticated session is missing email")
+	}
+	if userInfo.Email != "" && userInfo.Email != ss.Email {
+		return fmt.Errorf("userinfo email %q does not match authenticated email %q", userInfo.Email, ss.Email)
+	}
+
+	ss.Issuer = issuer
+	ss.EmailVerified = userInfo.EmailVerified
+	if ss.EmailVerified == nil {
+		ss.EmailVerified = emailVerifiedFromIDToken(ss.IDToken)
+	}
+	ss.PreferredUsername = userInfo.PreferredUsername
+	if ss.PreferredUsername == "" {
+		ss.PreferredUsername = userInfo.Name
+	}
+	if ss.PreferredUsername == "" {
+		ss.PreferredUsername = ss.Email
+	}
+
+	return nil
+}
+
+func emailVerifiedFromIDToken(idToken string) *bool {
+	parts := strings.Split(idToken, ".")
+	if len(parts) < 2 {
+		return nil
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil
+	}
+
+	var claims struct {
+		EmailVerified *bool `json:"email_verified"`
+	}
+	if err := json.Unmarshal(payload, &claims); err != nil {
+		return nil
+	}
+
+	return claims.EmailVerified
 }
 
 func normalizedIssuer(issuer string) string {
