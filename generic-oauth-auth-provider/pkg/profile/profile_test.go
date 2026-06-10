@@ -61,3 +61,42 @@ func TestFetchUserInfoRejectsMissingSubject(t *testing.T) {
 		t.Fatalf("expected error")
 	}
 }
+
+func TestFetchUserInfoPreservesEmailVerifiedFalse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"sub": "user-123",
+			"email": "dev@example.com",
+			"email_verified": false
+		}`))
+	}))
+	defer server.Close()
+
+	userInfo, err := FetchUserInfo(context.Background(), "Bearer access-token", server.URL)
+	if err != nil {
+		t.Fatalf("FetchUserInfo returned error: %v", err)
+	}
+	if userInfo.EmailVerified == nil || *userInfo.EmailVerified {
+		t.Fatalf("expected email_verified false, got %#v", userInfo.EmailVerified)
+	}
+}
+
+func TestFetchUserInfoLeavesEmailVerifiedAbsent(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"sub": "user-123",
+			"email": "dev@example.com"
+		}`))
+	}))
+	defer server.Close()
+
+	userInfo, err := FetchUserInfo(context.Background(), "Bearer access-token", server.URL)
+	if err != nil {
+		t.Fatalf("FetchUserInfo returned error: %v", err)
+	}
+	if userInfo.EmailVerified != nil {
+		t.Fatalf("expected email_verified to be absent, got %#v", userInfo.EmailVerified)
+	}
+}

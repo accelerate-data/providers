@@ -160,6 +160,47 @@ func TestMergeUserInfoIntoStatePreservesSessionEmailAndFallsBackToIDTokenEmailVe
 	}
 }
 
+func TestMergeUserInfoIntoStatePreservesUserInfoEmailVerifiedFalse(t *testing.T) {
+	ss := state.SerializableState{
+		User:    "user-123",
+		Email:   "dev@example.com",
+		IDToken: unsignedJWT(map[string]any{"email_verified": true}),
+	}
+	emailVerified := false
+	userInfo := &profile.UserInfo{
+		Subject:       "user-123",
+		Email:         "dev@example.com",
+		EmailVerified: &emailVerified,
+	}
+
+	err := mergeUserInfoIntoState(&ss, userInfo, "https://issuer.example.com")
+	if err != nil {
+		t.Fatalf("mergeUserInfoIntoState returned error: %v", err)
+	}
+	if ss.EmailVerified == nil || *ss.EmailVerified {
+		t.Fatalf("expected emailVerified false from userinfo, got %#v", ss.EmailVerified)
+	}
+}
+
+func TestMergeUserInfoIntoStateLeavesEmailVerifiedAbsentWhenClaimsAreAbsent(t *testing.T) {
+	ss := state.SerializableState{
+		User:  "user-123",
+		Email: "dev@example.com",
+	}
+	userInfo := &profile.UserInfo{
+		Subject: "user-123",
+		Email:   "dev@example.com",
+	}
+
+	err := mergeUserInfoIntoState(&ss, userInfo, "https://issuer.example.com")
+	if err != nil {
+		t.Fatalf("mergeUserInfoIntoState returned error: %v", err)
+	}
+	if ss.EmailVerified != nil {
+		t.Fatalf("expected emailVerified to remain absent, got %#v", ss.EmailVerified)
+	}
+}
+
 func TestDiscoverUserInfoEndpoint(t *testing.T) {
 	issuer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/.well-known/openid-configuration" {
