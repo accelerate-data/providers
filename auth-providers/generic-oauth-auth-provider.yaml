@@ -1,0 +1,55 @@
+name: "Custom OAuth"
+command: "generic-oauth-auth-provider/bin/obot-provider"
+icon: "https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/openid.svg"
+iconDark: "https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/openid.svg"
+description: "Auth provider for a custom OAuth 2.0 / OpenID Connect issuer"
+link: "https://openid.net/developers/how-connect-works/"
+requiredConfigurationParameters:
+  - name: "OBOT_GENERIC_OAUTH_AUTH_PROVIDER_NAME"
+    friendlyName: "Provider Name"
+    description: "Display name for this provider on the login page."
+    sensitive: false
+  - name: "OBOT_GENERIC_OAUTH_AUTH_PROVIDER_ISSUER"
+    friendlyName: "Issuer URL"
+    description: "OpenID Connect issuer URL. The provider must serve discovery at /.well-known/openid-configuration."
+    sensitive: false
+  - name: "OBOT_GENERIC_OAUTH_AUTH_PROVIDER_CLIENT_ID"
+    friendlyName: "Client ID"
+    description: "Client ID from your OAuth or OIDC application."
+    sensitive: false
+  - name: "OBOT_GENERIC_OAUTH_AUTH_PROVIDER_CLIENT_SECRET"
+    friendlyName: "Client Secret"
+    description: "Client secret from your OAuth or OIDC application."
+    sensitive: true
+  - name: "OBOT_AUTH_PROVIDER_COOKIE_SECRET"
+    friendlyName: "Cookie Secret"
+    description: "Secret used to encrypt cookies. Must be a random string of length 16, 24, or 32."
+    sensitive: true
+    hidden: true
+  - name: "OBOT_AUTH_PROVIDER_EMAIL_DOMAINS"
+    friendlyName: "Allowed E-Mail Domains"
+    description: "A list of email domains that are allowed to authenticate with this provider. * is a special value that allows all domains."
+    sensitive: false
+  - name: "OBOT_GENERIC_OAUTH_AUTH_PROVIDER_TRUST_EMAIL_LINKING"
+    friendlyName: "Trust Email Linking"
+    description: "Allow this issuer to link accounts by verified email address. Keep enabled only when you trust the configured issuer to own the emails it returns."
+    sensitive: false
+optionalConfigurationParameters:
+  - name: "OBOT_GENERIC_OAUTH_AUTH_PROVIDER_SCOPE"
+    friendlyName: "Scope"
+    description: "OAuth scopes to request. Default: openid email profile"
+    sensitive: false
+  - name: "OBOT_AUTH_PROVIDER_POSTGRES_CONNECTION_DSN"
+    friendlyName: "PostgreSQL connection string (DSN)"
+    description: "The connection string for a PostgreSQL database to use for session storage. If unset, cookies will be used for session storage instead."
+    sensitive: true
+    hidden: true
+  - name: "OBOT_AUTH_PROVIDER_TOKEN_REFRESH_DURATION"
+    friendlyName: "Token Refresh Duration"
+    description: "Time to wait before attempting to refresh auth tokens. Should be in a format like 1h1m1s. Default: 1h"
+    sensitive: false
+  - name: "OBOT_AUTH_PROVIDER_ENABLE_LOGGING"
+    friendlyName: "Enable Logging"
+    description: "Set to true to enable request, auth, and standard logging for the auth provider. Default: false"
+    sensitive: false
+postgresTablePrefix: "generic_oauth_"
