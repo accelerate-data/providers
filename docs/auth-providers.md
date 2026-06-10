@@ -110,10 +110,18 @@ matching the following JSONSchema:
       "type": "string",
       "format": "email",
       "description": "The email address of the user."
+    },
+    "issuer": {
+      "type": "string",
+      "description": "The OIDC issuer that minted the user identifier. Required for generic OIDC providers."
+    },
+    "emailVerified": {
+      "type": "boolean",
+      "description": "Whether the issuer reports the email address as verified. Generic OIDC providers should include this when the upstream issuer returns the claim."
     }
   },
   "required": ["accessToken", "preferredUsername", "user", "email"],
-  "additionalProperties": false
+  "additionalProperties": true
 }
 ```
 
@@ -129,6 +137,32 @@ Here is an example:
 ```
 
 If the `obot_access_token` cookie is not present or is invalid, the auth provider should return a 400 status code.
+
+### Generic OAuth / OIDC Provider
+
+The generic provider is implemented by `generic-oauth-auth-provider` and registered by
+`auth-providers/generic-oauth-auth-provider.yaml`.
+
+Required configuration:
+
+- `OBOT_GENERIC_OAUTH_AUTH_PROVIDER_NAME`: Display name shown on the login page.
+- `OBOT_GENERIC_OAUTH_AUTH_PROVIDER_ISSUER`: OIDC issuer URL. The issuer must support discovery at `/.well-known/openid-configuration`.
+- `OBOT_GENERIC_OAUTH_AUTH_PROVIDER_CLIENT_ID`: OAuth/OIDC client ID.
+- `OBOT_GENERIC_OAUTH_AUTH_PROVIDER_CLIENT_SECRET`: OAuth/OIDC client secret.
+- `OBOT_AUTH_PROVIDER_COOKIE_SECRET`: Base64-encoded cookie secret.
+- `OBOT_AUTH_PROVIDER_EMAIL_DOMAINS`: Allowed email domains, or `*`.
+- `OBOT_GENERIC_OAUTH_AUTH_PROVIDER_TRUST_EMAIL_LINKING`: Whether Obot may link accounts by verified email for this issuer.
+
+Optional configuration:
+
+- `OBOT_GENERIC_OAUTH_AUTH_PROVIDER_SCOPE`: OAuth scopes. Defaults to `openid email profile`.
+- `OBOT_AUTH_PROVIDER_POSTGRES_CONNECTION_DSN`: PostgreSQL session storage DSN.
+- `OBOT_AUTH_PROVIDER_TOKEN_REFRESH_DURATION`: Token refresh duration. Defaults to `1h`.
+- `OBOT_AUTH_PROVIDER_ENABLE_LOGGING`: Enables oauth2-proxy request, auth, and standard logging.
+
+The generic provider uses OIDC discovery, ID token validation, issuer verification, audience verification, nonce validation,
+and PKCE `S256` through OAuth2 Proxy. Its `/obot-get-state` response sets `user` to the OIDC `sub`, sets `issuer` to the
+configured issuer, and forwards `emailVerified` from the upstream `email_verified` claim when present.
 
 ## Reference Implementation
 
