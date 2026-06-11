@@ -231,11 +231,11 @@ func mergeUserInfoIntoState(ss *state.SerializableState, userInfo *profile.UserI
 	if userInfo.Subject != ss.User {
 		return fmt.Errorf("userinfo sub %q does not match authenticated subject %q", userInfo.Subject, ss.User)
 	}
+	if userInfo.Email != "" {
+		ss.Email = userInfo.Email
+	}
 	if ss.Email == "" {
 		return fmt.Errorf("authenticated session is missing email")
-	}
-	if userInfo.Email != "" && userInfo.Email != ss.Email {
-		return fmt.Errorf("userinfo email %q does not match authenticated email %q", userInfo.Email, ss.Email)
 	}
 
 	ss.Issuer = issuer

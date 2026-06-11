@@ -110,19 +110,22 @@ func TestMergeUserInfoIntoStateRejectsSubjectMismatch(t *testing.T) {
 	}
 }
 
-func TestMergeUserInfoIntoStateRejectsEmailMismatch(t *testing.T) {
+func TestMergeUserInfoIntoStateUsesUserInfoEmailAfterSubjectMatch(t *testing.T) {
 	ss := state.SerializableState{
 		User:  "user-123",
 		Email: "dev@example.com",
 	}
 	userInfo := &profile.UserInfo{
 		Subject: "user-123",
-		Email:   "attacker@example.net",
+		Email:   "updated@example.net",
 	}
 
 	err := mergeUserInfoIntoState(&ss, userInfo, "https://issuer.example.com")
-	if err == nil {
-		t.Fatalf("expected error")
+	if err != nil {
+		t.Fatalf("mergeUserInfoIntoState returned error: %v", err)
+	}
+	if ss.Email != "updated@example.net" {
+		t.Fatalf("expected userinfo email, got %q", ss.Email)
 	}
 }
 
@@ -157,6 +160,25 @@ func TestMergeUserInfoIntoStatePreservesSessionEmailAndFallsBackToIDTokenEmailVe
 	}
 	if ss.PreferredUsername != "dev" {
 		t.Fatalf("expected preferred username, got %q", ss.PreferredUsername)
+	}
+}
+
+func TestMergeUserInfoIntoStateUsesUserInfoEmailWhenSessionEmailIsSubject(t *testing.T) {
+	ss := state.SerializableState{
+		User:  "user-123",
+		Email: "user-123",
+	}
+	userInfo := &profile.UserInfo{
+		Subject: "user-123",
+		Email:   "dev@example.com",
+	}
+
+	err := mergeUserInfoIntoState(&ss, userInfo, "https://issuer.example.com")
+	if err != nil {
+		t.Fatalf("mergeUserInfoIntoState returned error: %v", err)
+	}
+	if ss.Email != "dev@example.com" {
+		t.Fatalf("expected email from userinfo, got %q", ss.Email)
 	}
 }
 
