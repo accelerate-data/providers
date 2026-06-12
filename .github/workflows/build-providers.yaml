@@ -5,6 +5,9 @@ permissions:
   contents: read
   packages: write
 
+env:
+  PROVIDERS_IMAGE: ghcr.io/accelerate-data/providers
+
 on:
   pull_request:
     branches:
@@ -43,7 +46,7 @@ jobs:
           target: providers
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ github.ref_type == 'tag' && format('ghcr.io/obot-platform/providers:{0}', github.ref_name) || format('ghcr.io/{0}:latest', github.repository) }}
+            ${{ github.ref_type == 'tag' && format('{0}:{1}', env.PROVIDERS_IMAGE, github.ref_name) || format('{0}:latest', env.PROVIDERS_IMAGE) }}
 
       - name: Install Cosign
         if: github.event_name != 'pull_request'
@@ -55,7 +58,7 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
-          TAGS: ${{ github.ref_type == 'tag' && format('ghcr.io/obot-platform/providers:{0}', github.ref_name) || format('ghcr.io/{0}:latest', github.repository) }}
+          TAGS: ${{ github.ref_type == 'tag' && format('{0}:{1}', env.PROVIDERS_IMAGE, github.ref_name) || format('{0}:latest', env.PROVIDERS_IMAGE) }}
         run: |
           images=""
           for tag in ${TAGS}; do
