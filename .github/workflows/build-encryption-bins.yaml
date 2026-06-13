@@ -5,6 +5,9 @@ permissions:
   contents: read
   packages: write
 
+env:
+  ENCRYPTION_BINS_IMAGE: ghcr.io/accelerate-data/providers/encryption-bins
+
 on:
   push:
     branches:
@@ -39,7 +42,7 @@ jobs:
           target: encryption-bins
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ github.ref_type == 'tag' && format('ghcr.io/obot-platform/providers/encryption-bins:{0}', github.ref_name) || 'ghcr.io/obot-platform/providers/encryption-bins:latest' }}
+            ${{ github.ref_type == 'tag' && format('{0}:{1}', env.ENCRYPTION_BINS_IMAGE, github.ref_name) || format('{0}:latest', env.ENCRYPTION_BINS_IMAGE) }}
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3.8.1
@@ -49,7 +52,7 @@ jobs:
       - name: Sign Images
         env:
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
-          TAGS: ${{ github.ref_type == 'tag' && format('ghcr.io/obot-platform/providers/encryption-bins:{0}', github.ref_name) || 'ghcr.io/obot-platform/providers/encryption-bins:latest' }}
+          TAGS: ${{ github.ref_type == 'tag' && format('{0}:{1}', env.ENCRYPTION_BINS_IMAGE, github.ref_name) || format('{0}:latest', env.ENCRYPTION_BINS_IMAGE) }}
         run: |
           images=""
           for tag in ${TAGS}; do
