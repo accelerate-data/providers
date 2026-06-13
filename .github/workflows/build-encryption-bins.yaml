@@ -6,7 +6,7 @@ permissions:
   packages: write
 
 env:
-  ENCRYPTION_BINS_IMAGE: ghcr.io/accelerate-data/providers/encryption-bins
+  ENCRYPTION_BINS_IMAGE: ghcr.io/accelerate-data/providers-vibedata/encryption-bins
 
 on:
   push:

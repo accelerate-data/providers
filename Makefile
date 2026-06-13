@@ -13,4 +13,4 @@ package-encryption-bins:
 	./scripts/package-encryption-bins.sh
 
 docker-build:
-	docker build -t ghcr.io/accelerate-data/providers:latest --target providers .
+	docker build -t ghcr.io/accelerate-data/providers-vibedata:latest --target providers .
