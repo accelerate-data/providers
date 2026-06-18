@@ -9,6 +9,7 @@ env:
   PROVIDERS_IMAGE: ghcr.io/accelerate-data/providers-vibedata
 
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - main
@@ -20,12 +21,18 @@ on:
 
 jobs:
   oss-providers-build:
-    runs-on: depot-ubuntu-22.04
+    runs-on: ubuntu-latest
     concurrency:
       group: oss-providers-build
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
@@ -36,13 +43,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push Docker image
-        uses: depot/build-push-action@v1
+        uses: docker/build-push-action@v6
         id: build-and-push
         with:
-          project: bbqjs4tj1g
           context: .
           push: ${{ github.event_name != 'pull_request' }}
-          pull: true
           target: providers
           platforms: linux/amd64,linux/arm64
           tags: |
