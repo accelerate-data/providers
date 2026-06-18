@@ -6,12 +6,17 @@ permissions:
   id-token: write
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
     paths-ignore:
       - docs/**
       - .github/workflows/**
+
+concurrency:
+  group: build-providers-vibedata
+  cancel-in-progress: false
 
 env:
   PROVIDERS_IMAGE: ghcr.io/accelerate-data/providers-vibedata
