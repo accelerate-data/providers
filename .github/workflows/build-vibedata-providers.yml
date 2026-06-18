@@ -78,8 +78,8 @@ jobs:
       - name: Save digests
         run: |
           mkdir -p /tmp/digests/providers /tmp/digests/encryption-bins
-          echo "${{ steps.providers.outputs.digest }}"       > /tmp/digests/providers/${{ matrix.arch }}
-          echo "${{ steps.encryption-bins.outputs.digest }}" > /tmp/digests/encryption-bins/${{ matrix.arch }}
+          printf '%s' "${{ steps.providers.outputs.digest }}"       > /tmp/digests/providers/${{ matrix.arch }}
+          printf '%s' "${{ steps.encryption-bins.outputs.digest }}" > /tmp/digests/encryption-bins/${{ matrix.arch }}
 
       - name: Upload digest artifacts
         uses: actions/upload-artifact@v4
