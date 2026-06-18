@@ -9,6 +9,10 @@ on:
   schedule:
     - cron: "0 6 * * 1"
 
+concurrency:
+  group: upstream-sync-providers
+  cancel-in-progress: false
+
 env:
   UPSTREAM_REPO: https://github.com/obot-platform/providers.git
   UPSTREAM_BRANCH: main
