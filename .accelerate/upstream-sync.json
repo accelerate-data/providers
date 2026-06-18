@@ -1,0 +1,8 @@
+{
+  "upstreamRepo": "https://github.com/obot-platform/providers.git",
+  "upstreamBranch": "main",
+  "upstreamHeadSha": "",
+  "mergeBaseSha": "",
+  "syncBranch": "",
+  "syncTimestamp": ""
+}
