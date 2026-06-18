@@ -1,0 +1,182 @@
+name: Build and Push providers-vibedata
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - docs/**
+      - .github/workflows/**
+
+concurrency:
+  group: build-providers-vibedata
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { arch: amd64, runner: ubuntu-latest }
+          - { arch: arm64, runner: ubuntu-24.04-arm }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push providers by digest
+        id: build-providers
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: providers
+          platforms: linux/${{ matrix.arch }}
+          outputs: type=image,name=ghcr.io/accelerate-data/providers-vibedata,push-by-digest=true,name-canonical=true,push=true
+
+      - name: Build and push encryption-bins by digest
+        id: build-encryption-bins
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: encryption-bins
+          platforms: linux/${{ matrix.arch }}
+          outputs: type=image,name=ghcr.io/accelerate-data/providers-vibedata/encryption-bins,push-by-digest=true,name-canonical=true,push=true
+
+      - name: Save digests
+        run: |
+          mkdir -p /tmp/digests/providers /tmp/digests/encryption-bins
+          printf '%s' "${{ steps.build-providers.outputs.digest }}" > /tmp/digests/providers/${{ matrix.arch }}
+          printf '%s' "${{ steps.build-encryption-bins.outputs.digest }}" > /tmp/digests/encryption-bins/${{ matrix.arch }}
+
+      - name: Upload providers digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: providers-digest-${{ matrix.arch }}
+          path: /tmp/digests/providers/${{ matrix.arch }}
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Upload encryption-bins digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: encryption-bins-digest-${{ matrix.arch }}
+          path: /tmp/digests/encryption-bins/${{ matrix.arch }}
+          retention-days: 1
+          if-no-files-found: error
+
+  merge:
+    name: Merge manifests
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Download providers digests
+        uses: actions/download-artifact@v4
+        with:
+          pattern: providers-digest-*
+          path: /tmp/digests/providers
+          merge-multiple: true
+
+      - name: Download encryption-bins digests
+        uses: actions/download-artifact@v4
+        with:
+          pattern: encryption-bins-digest-*
+          path: /tmp/digests/encryption-bins
+          merge-multiple: true
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create providers manifest list
+        id: manifest-providers
+        run: |
+          set -euo pipefail
+          SRCS=""
+          for f in /tmp/digests/providers/*; do
+            SRCS="$SRCS ghcr.io/accelerate-data/providers-vibedata@$(cat "$f")"
+          done
+          docker buildx imagetools create \
+            -t ghcr.io/accelerate-data/providers-vibedata:latest \
+            $SRCS
+          DIGEST="$(docker buildx imagetools inspect ghcr.io/accelerate-data/providers-vibedata:latest \
+            --format '{{println .Manifest.Digest}}' | head -1 | tr -d '[:space:]')"
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Create encryption-bins manifest list
+        id: manifest-encryption-bins
+        run: |
+          set -euo pipefail
+          SRCS=""
+          for f in /tmp/digests/encryption-bins/*; do
+            SRCS="$SRCS ghcr.io/accelerate-data/providers-vibedata/encryption-bins@$(cat "$f")"
+          done
+          docker buildx imagetools create \
+            -t ghcr.io/accelerate-data/providers-vibedata/encryption-bins:latest \
+            $SRCS
+          DIGEST="$(docker buildx imagetools inspect ghcr.io/accelerate-data/providers-vibedata/encryption-bins:latest \
+            --format '{{println .Manifest.Digest}}' | head -1 | tr -d '[:space:]')"
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify both arches present
+        run: |
+          set -euo pipefail
+          for image in \
+            "ghcr.io/accelerate-data/providers-vibedata:latest" \
+            "ghcr.io/accelerate-data/providers-vibedata/encryption-bins:latest"; do
+            INSPECT="$(docker buildx imagetools inspect "${image}")"
+            echo "$INSPECT"
+            echo "$INSPECT" | grep -q 'linux/amd64' || { echo "::error::${image} missing linux/amd64"; exit 1; }
+            echo "$INSPECT" | grep -q 'linux/arm64' || { echo "::error::${image} missing linux/arm64"; exit 1; }
+          done
+
+      - name: Write summary
+        run: |
+          {
+            echo "### :whale: providers-vibedata published"
+            echo ""
+            echo "| Image | Digest |"
+            echo "| --- | --- |"
+            echo "| \`providers-vibedata:latest\` | \`${{ steps.manifest-providers.outputs.digest }}\` |"
+            echo "| \`providers-vibedata/encryption-bins:latest\` | \`${{ steps.manifest-encryption-bins.outputs.digest }}\` |"
+            echo "| Run | ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.8.1
+        with:
+          cosign-release: "v2.4.3"
+
+      - name: Sign providers image
+        env:
+          DIGEST: ${{ steps.manifest-providers.outputs.digest }}
+        run: cosign sign --yes "ghcr.io/accelerate-data/providers-vibedata:latest@${DIGEST}"
+
+      - name: Sign encryption-bins image
+        env:
+          DIGEST: ${{ steps.manifest-encryption-bins.outputs.digest }}
+        run: cosign sign --yes "ghcr.io/accelerate-data/providers-vibedata/encryption-bins:latest@${DIGEST}"
