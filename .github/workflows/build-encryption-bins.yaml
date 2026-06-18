@@ -9,6 +9,7 @@ env:
   ENCRYPTION_BINS_IMAGE: ghcr.io/accelerate-data/providers-vibedata/encryption-bins
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
