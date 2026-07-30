@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  oss-providers-build:
+  build:
     runs-on: ubuntu-latest
     concurrency:
       group: oss-providers-build
