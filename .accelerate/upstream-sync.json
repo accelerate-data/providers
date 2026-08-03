@@ -1,8 +1,8 @@
 {
   "upstreamRepo": "https://github.com/obot-platform/providers.git",
   "upstreamBranch": "main",
-  "upstreamHeadSha": "b7d03b574e3ce7dcc2978fa24f1f4e3d69d612de",
-  "mergeBaseSha": "e851d89499b9bc4c11b50b274c2f33f3c33154c1",
-  "syncBranch": "sync/upstream-20260730-b7d03b5",
-  "syncTimestamp": "2026-07-30T00:41:42Z"
+  "upstreamHeadSha": "1e126d06737ef5b9dc66c9ef0575ef2a25c81880",
+  "mergeBaseSha": "b7d03b574e3ce7dcc2978fa24f1f4e3d69d612de",
+  "syncBranch": "sync/upstream-20260803-1e126d0",
+  "syncTimestamp": "2026-08-03T07:14:22Z"
 }
