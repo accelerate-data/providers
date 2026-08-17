@@ -5,24 +5,26 @@ permissions:
   contents: read
   packages: write
 
+env:
+  PROVIDERS_IMAGE: ghcr.io/accelerate-data/providers-vibedata
+
 on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - main
-    tags:
-      - "v*"
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: depot-ubuntu-22.04
+    runs-on: ubuntu-latest
     concurrency:
       group: oss-providers-build
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
@@ -33,17 +35,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push Docker image
-        uses: depot/build-push-action@v1
+        uses: docker/build-push-action@v6
         id: build-and-push
         with:
-          project: bbqjs4tj1g
           context: .
           push: ${{ github.event_name != 'pull_request' }}
-          pull: true
           target: providers
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ github.ref_type == 'tag' && format('ghcr.io/obot-platform/providers:{0}', github.ref_name) || format('ghcr.io/{0}:latest', github.repository) }}
+            ${{ github.ref_type == 'tag' && format('{0}:{1}', env.PROVIDERS_IMAGE, github.ref_name) || format('{0}:latest', env.PROVIDERS_IMAGE) }}
 
       - name: Install Cosign
         if: github.event_name != 'pull_request'
@@ -55,7 +55,7 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
-          TAGS: ${{ github.ref_type == 'tag' && format('ghcr.io/obot-platform/providers:{0}', github.ref_name) || format('ghcr.io/{0}:latest', github.repository) }}
+          TAGS: ${{ github.ref_type == 'tag' && format('{0}:{1}', env.PROVIDERS_IMAGE, github.ref_name) || format('{0}:latest', env.PROVIDERS_IMAGE) }}
         run: |
           images=""
           for tag in ${TAGS}; do
