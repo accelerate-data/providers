@@ -2,6 +2,7 @@ build:
 	./scripts/build.sh
 
 test:
+	bash scripts/verify-docker-build-contract.sh
 	cd github-auth-provider && go test ./... && cd ..
 	cd google-auth-provider && go test ./... && cd ..
 	cd generic-oauth-auth-provider && go test ./... && cd ..
