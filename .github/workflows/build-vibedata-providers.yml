@@ -88,6 +88,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve synchronized upstream version
+        id: version
+        run: |
+          set -euo pipefail
+          UPSTREAM_VERSION="$(jq -r '.upstreamVersion' .accelerate/upstream-sync.json)"
+          if ! [[ "$UPSTREAM_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid stable upstream version: ${UPSTREAM_VERSION}"
+            exit 1
+          fi
+          echo "version=${UPSTREAM_VERSION}" >> "$GITHUB_OUTPUT"
+
       - name: Download providers digests
         uses: actions/download-artifact@v4
         with:
@@ -114,40 +127,50 @@ jobs:
 
       - name: Create providers manifest list
         id: manifest-providers
+        env:
+          UPSTREAM_VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          SRCS=""
+          SRCS=()
           for f in /tmp/digests/providers/*; do
-            SRCS="$SRCS ghcr.io/accelerate-data/providers-vibedata@$(cat "$f")"
+            SRCS+=("ghcr.io/accelerate-data/providers-vibedata@$(cat "$f")")
           done
           docker buildx imagetools create \
             -t ghcr.io/accelerate-data/providers-vibedata:latest \
-            $SRCS
+            -t "ghcr.io/accelerate-data/providers-vibedata:${UPSTREAM_VERSION}-vibedata" \
+            "${SRCS[@]}"
           DIGEST="$(docker buildx imagetools inspect ghcr.io/accelerate-data/providers-vibedata:latest \
-            --format '{{println .Manifest.Digest}}' | head -1 | tr -d '[:space:]')"
+            --format '{{.Manifest.Digest}}' | tr -d '[:space:]')"
           echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
 
       - name: Create encryption-bins manifest list
         id: manifest-encryption-bins
+        env:
+          UPSTREAM_VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          SRCS=""
+          SRCS=()
           for f in /tmp/digests/encryption-bins/*; do
-            SRCS="$SRCS ghcr.io/accelerate-data/providers-vibedata/encryption-bins@$(cat "$f")"
+            SRCS+=("ghcr.io/accelerate-data/providers-vibedata/encryption-bins@$(cat "$f")")
           done
           docker buildx imagetools create \
             -t ghcr.io/accelerate-data/providers-vibedata/encryption-bins:latest \
-            $SRCS
+            -t "ghcr.io/accelerate-data/providers-vibedata/encryption-bins:${UPSTREAM_VERSION}-vibedata" \
+            "${SRCS[@]}"
           DIGEST="$(docker buildx imagetools inspect ghcr.io/accelerate-data/providers-vibedata/encryption-bins:latest \
-            --format '{{println .Manifest.Digest}}' | head -1 | tr -d '[:space:]')"
+            --format '{{.Manifest.Digest}}' | tr -d '[:space:]')"
           echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
 
       - name: Verify both arches present
+        env:
+          UPSTREAM_VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
           for image in \
             "ghcr.io/accelerate-data/providers-vibedata:latest" \
-            "ghcr.io/accelerate-data/providers-vibedata/encryption-bins:latest"; do
+            "ghcr.io/accelerate-data/providers-vibedata:${UPSTREAM_VERSION}-vibedata" \
+            "ghcr.io/accelerate-data/providers-vibedata/encryption-bins:latest" \
+            "ghcr.io/accelerate-data/providers-vibedata/encryption-bins:${UPSTREAM_VERSION}-vibedata"; do
             INSPECT="$(docker buildx imagetools inspect "${image}")"
             echo "$INSPECT"
             echo "$INSPECT" | grep -q 'linux/amd64' || { echo "::error::${image} missing linux/amd64"; exit 1; }
@@ -162,7 +185,9 @@ jobs:
             echo "| Image | Digest |"
             echo "| --- | --- |"
             echo "| \`providers-vibedata:latest\` | \`${{ steps.manifest-providers.outputs.digest }}\` |"
+            echo "| \`providers-vibedata:${{ steps.version.outputs.version }}-vibedata\` | \`${{ steps.manifest-providers.outputs.digest }}\` |"
             echo "| \`providers-vibedata/encryption-bins:latest\` | \`${{ steps.manifest-encryption-bins.outputs.digest }}\` |"
+            echo "| \`providers-vibedata/encryption-bins:${{ steps.version.outputs.version }}-vibedata\` | \`${{ steps.manifest-encryption-bins.outputs.digest }}\` |"
             echo "| Run | ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
