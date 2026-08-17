@@ -38,6 +38,8 @@ type SerializableState struct {
 	PreferredUsername string        `json:"preferredUsername"`
 	User              string        `json:"user"`
 	Email             string        `json:"email"`
+	Issuer            string        `json:"issuer,omitempty"`
+	EmailVerified     *bool         `json:"emailVerified,omitempty"`
 	Groups            []string      `json:"groups"`
 	GroupInfos        GroupInfoList `json:"groupInfos"`
 	SetCookies        []string      `json:"setCookies"`
