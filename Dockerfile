@@ -3,15 +3,6 @@ FROM --platform=$BUILDPLATFORM cgr.dev/chainguard/wolfi-base AS base
 
 RUN apk upgrade --no-cache && apk add --no-cache bash go-1.27 make git ca-certificates upx
 
-FROM base AS runtime-files
-RUN mkdir -p /runtime/etc/ssl/certs /runtime/tmp && \
-    chmod 1777 /runtime/tmp && \
-    cp /etc/ssl/certs/ca-certificates.crt /runtime/etc/ssl/certs/
-
-FROM scratch AS runtime
-ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
-COPY --from=runtime-files /runtime/ /
-
 FROM base AS providers-builder
 WORKDIR /obot-providers/providers
 COPY . /obot-providers/providers
