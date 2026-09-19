@@ -15,4 +15,9 @@ if ! awk '/apk add/ && /bash/ { found = 1 } END { exit !found }' "${dockerfile}"
   exit 1
 fi
 
-echo "Docker build interpreter contract is valid"
+if ! awk '$1 == "FROM" && $2 == "scratch" && $3 == "AS" && $4 == "runtime" { found = 1 } END { exit !found }' "${dockerfile}"; then
+  echo "Dockerfile must define the scratch runtime stage used by final images" >&2
+  exit 1
+fi
+
+echo "Docker build contract is valid"
