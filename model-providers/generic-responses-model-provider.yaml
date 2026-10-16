@@ -1,19 +1,19 @@
-name: "Responses Compatible Generic Provider"
+name: "${generic_responses_model_provider_name}"
 command: "generic-responses-model-provider/bin/obot-provider"
 validateArgs:
   - validate
 icon: "/admin/assets/obot_openai_antenna_icon.png"
 iconDark: "/admin/assets/obot_openai_antenna_icon.png"
-description: "Model Provider for generic [Responses API compatible](https://www.openresponses.org) model providers, like [Ollama](https://ollama.com/) (`http://127.0.0.1:11434/v1`), LiteLLM, etc."
+description: "${generic_responses_model_provider_description}"
 link: "https://www.openresponses.org"
 requiredConfigurationParameters:
   - name: "OBOT_GENERIC_RESPONSES_MODEL_PROVIDER_BASE_URL"
-    friendlyName: "Base URL"
-    description: "Base URL for the OpenAI Responses-compatible API (e.g. http://127.0.0.1:11434/v1 for Ollama)."
+    friendlyName: "${generic_responses_model_provider_base_url_friendly_name}"
+    description: "${generic_responses_model_provider_base_url_description}"
     sensitive: false
 optionalConfigurationParameters:
   - name: "OBOT_GENERIC_RESPONSES_MODEL_PROVIDER_API_KEY"
-    friendlyName: "API Key"
-    description: "API Key for the OpenAI Responses-compatible API. Some providers like Ollama don't enforce Authentication, so this is optional."
+    friendlyName: "${generic_responses_model_provider_api_key_friendly_name}"
+    description: "${generic_responses_model_provider_api_key_description}"
     sensitive: true
 dialect: "OpenResponses"

@@ -1,12 +1,12 @@
-name: "xAI"
+name: "${xai_model_provider_name}"
 command: "xai-model-provider/bin/obot-provider"
 validateArgs:
   - validate
 icon: "/admin/assets/xai-logo.svg"
-description: "Model Provider for xAI"
+description: "${xai_model_provider_description}"
 link: "https://x.ai/"
 requiredConfigurationParameters:
   - name: "OBOT_XAI_MODEL_PROVIDER_API_KEY"
-    friendlyName: "API Key"
-    description: "xAI API Key"
+    friendlyName: "${xai_model_provider_api_key_friendly_name}"
+    description: "${xai_model_provider_api_key_description}"
     sensitive: true

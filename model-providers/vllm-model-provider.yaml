@@ -1,18 +1,18 @@
-name: "vLLM"
+name: "${vllm_model_provider_name}"
 command: "vllm-model-provider/bin/obot-provider"
 validateArgs:
   - validate
 icon: "/admin/assets/vllm-logo.svg"
 iconDark: "/admin/assets/vllm-logo.svg"
-description: "Model Provider for vLLM"
+description: "${vllm_model_provider_description}"
 link: "https://docs.vllm.ai/"
 requiredConfigurationParameters:
   - name: "OBOT_VLLM_MODEL_PROVIDER_ENDPOINT"
-    friendlyName: "Endpoint"
-    description: "Endpoint for the vLLM OpenAI service (eg. http://localhost:8000)"
+    friendlyName: "${vllm_model_provider_endpoint_friendly_name}"
+    description: "${vllm_model_provider_endpoint_description}"
     sensitive: false
 optionalConfigurationParameters:
   - name: "OBOT_VLLM_MODEL_PROVIDER_API_KEY"
-    friendlyName: "API Key"
-    description: "VLLM API Key set when starting the vLLM server"
+    friendlyName: "${vllm_model_provider_api_key_friendly_name}"
+    description: "${vllm_model_provider_api_key_description}"
     sensitive: true
