@@ -2,8 +2,11 @@ build:
 	./scripts/build.sh
 
 test:
+	bash scripts/verify-docker-build-contract.sh
+	bash scripts/verify-upstream-sync-workflow.sh
 	cd github-auth-provider && go test ./... && cd ..
 	cd google-auth-provider && go test ./... && cd ..
+	cd generic-oauth-auth-provider && go test ./... && cd ..
 
 package-providers:
 	./scripts/package-providers.sh
@@ -12,4 +15,4 @@ package-encryption-bins:
 	./scripts/package-encryption-bins.sh
 
 docker-build:
-	docker build -t obot-platform/providers:latest --target providers .
+	docker build -t ghcr.io/accelerate-data/providers-vibedata:latest --target providers .
