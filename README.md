@@ -23,5 +23,26 @@ Docker builds cross-compile for the target platform, including `linux/amd64` and
 `linux/arm64`, without running target binaries during the build. Local builds
 remain uncompressed.
 
+## Provider display text
+
+Provider YAML references backend catalog messages in `name`, `description`, and
+configuration parameters' `friendlyName` and `description`:
+
+```yaml
+name: "${google_auth_provider_name}"
+description: "${google_auth_provider_description}"
+```
+
+Messages live in Obot's `pkg/i18n/messages/auth-providers/{locale}.json` or
+`pkg/i18n/messages/model-providers/{locale}.json`. Use the YAML filename with
+hyphens replaced by underscores as the key prefix. Parameter keys append the
+lowercase configuration suffix and `friendly_name` or `description`.
+
+Obot resolves references using `Accept-Language`, falling back to English for
+missing or empty translations. Unknown keys retain their `${key}` reference.
+Literal text remains valid; inline YAML `locales` maps are no longer supported.
+Ship catalog additions in Obot together with updated provider registry images;
+catalog changes require rebuilding Obot.
+
 ## Issues
 Want to open an issue? Head over to the [Obot repo](https://github.com/obot-platform/obot/issues). Provider related issues will have the `providers` label.
